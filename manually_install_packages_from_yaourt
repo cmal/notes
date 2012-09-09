@@ -2,3 +2,4 @@ yaourt -G <package>  #获取包的PKGBUILD信息
 makepkg -s  #获取build文件，并编译
 *) makepkg -g  #如果md5出错，重新生成
 yaourt -U <package>.pkg.tar.gz  #用yaourt安装新生成的版本
+# 例如把<package>替换为openerp

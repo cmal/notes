@@ -10,4 +10,5 @@ Server = http://mirrors.sohu.com/archlinux/$repo/os/i686
 
 # 修改libucimf在ucimf.cpp添加一行#include <unistd.h>,
 # 重新编译，用makepkg -g/-s打包，pacman -U 安装，这样可以保持yaourt的依赖
-# yong输入法，Monaco雅黑字体，更改.fbtermrc .yong/yong.ini .bashrc配置文件
+yaourt -S yong
+# Monaco雅黑字体，更改.fbtermrc .yong/yong.ini .bashrc配置文件
