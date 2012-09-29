@@ -3,12 +3,12 @@
 pacman -S net-tools dnsutils inetutils iproute2 wget rfkill mlocate
 # update source list
 pacman -S python2 git yaourt
-yaourt -S trackpoint
+cp /usr/bin/python2 /usr/bin/python
 [archlinux china source]
 Server = http://mirrors.163.com/archlinux/$repo/os/i684
 Server = http://mirrors.sohu.com/archlinux/$repo/os/i686
 
-# 修改libucimf在ucimf.cpp添加一行#include <unistd.h>,
-# 重新编译，用makepkg -g/-s打包，pacman -U 安装，这样可以保持yaourt的依赖
+# !修改libucimf在ucimf.cpp添加一行#include <unistd.h>,
+# 重新编译，用makepkg -g/-s打包，pacman -U/makepkg -i 安装，这样可以保持yaourt的依赖
 yaourt -S yong
 # Monaco雅黑字体，更改.fbtermrc .yong/yong.ini .bashrc配置文件
