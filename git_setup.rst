@@ -2,7 +2,6 @@
 ====================
 1.1 User Name
 -------------
-::
 
     $ git config --global user.name "cmal"
     # Sets the default name for git to use when you commit
