@@ -91,16 +91,24 @@ Model.find(options)的基本操作总结如下:
 ''''''''''''''''''''''''''''''''''''''''''''
 
 =========  =========================
-使用主键   >>>client = Client.find(10)
-first      >>>client = Client.first
+使用主键   >>> client = Client.find(10)
+first      >>> client = Client.first
            如果找不到返回nil，不引发Exception
 last
 first!     如果找不到raise RecordNotFound
 last!
 =========  =========================
 
-1.2 Retrieving Multiple Objects
+1.2 抽取多个对象 Retrieving Multiple Objects
 '''''''''''''''''''''''''''''''
+
+===============  ==================================
+使用多个主键     Model.find(array_of_primary_key)
+                 >>> client = Client.find([1, 10])
+                 or >>> client = Client.find(1, 10)一样的意思
+                 找不到raise ActiveRecord::RecordNotFound
+===============  ==================================
+
 1.3 Retrieving Multiple Objects in Batches
 ''''''''''''''''''''''''''''''''''''''''''
 2 Conditions
