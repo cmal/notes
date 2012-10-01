@@ -100,11 +100,11 @@ last!
 =========  =========================
 
 1.2 抽取多个对象 Retrieving Multiple Objects
-'''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''
 
 ============  ==================================
 使用多个主键  Model.find(array_of_primary_key)
-用法          ``client = Client.find([1, 10])``
+              ``client = Client.find([1, 10])``
               or ``client = Client.find(1, 10)`` 一样的意思
               找不到raise ActiveRecord::RecordNotFound
 ============  ==================================
