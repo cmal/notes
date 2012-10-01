@@ -42,11 +42,11 @@ Active Record Associations
 '''''''''''''''''''''''''''''''
 <http://guides.rubyonrails.org/association_basics.html#bi-directional-associations>
 
-:inverse_of .. 在关系中，把关系的一方赋值给另一方，由于默认不会同步两者，所以在需要同步时应加入``:inverse_of``帮助ruby知道应该同步。但在某些关系中不能使用。
+:inverse_of 在关系中，把关系的一方赋值给另一方，由于默认不会同步两者，所以在需要同步时应加入``:inverse_of``帮助ruby知道应该同步。但在某些关系中不能使用。
 
 4 Detailed Associations Reference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TODO:       .. 各种关系的详细参考<http://guides.rubyonrails.org/association_basics.html#detailed-association-reference>有时间或用到的时候再看。
+TODO: 各种关系的详细参考<http://guides.rubyonrails.org/association_basics.html#detailed-association-reference>有时间或用到的时候再看。
 
 ActiveRecord查询接口 Active Record Query Interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,12 +81,23 @@ ActiveRecord提供的方法有:
 所有方法返回一个ActiveRecord::Relation实例
 
 Model.find(options)的基本操作总结如下:
+
 * 把options转换为SQL
 * 执行SQL，抽取结果
 * 对每个结果行，实例化同等的Ruby对象
 * 执行``after_find``回调函数，如果有
+
 1.1 抽取单个对象 Retrieving a Single Objects
-'''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''
+
+=========  =========================
+使用主键   >>>client = Client.find(10)
+first      >>>client = Client.first
+           如果找不到返回nil，不引发Exception
+last
+first!     如果找不到raise RecordNotFound
+last!
+=========  =========================
 
 1.2 Retrieving Multiple Objects
 '''''''''''''''''''''''''''''''
