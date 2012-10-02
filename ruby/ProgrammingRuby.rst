@@ -49,3 +49,14 @@ new % * + << <=> == === =~ [ ] [ ]= ~ capitalize capitalize! center chomp chomp!
 * += 不改变original string
 * << 改变orginal string
 * Ruby中通常使用<<操作符
+
+Symbol
+~~~~~~
+相同的symbol拥有相同的object_id
+查看symbol是否已定义:
+这个方法是 *错误* 的:
+>>>Symbol.all_symbols.include?(:some_symbol)
+正确的方法:
+>>>Symbol.all_symbols.map{|x| x.to_s}.include?("some_symbol")
+原因:
+错误的方法在使用的时候已经定义了:some_symbol，所以一定返回true

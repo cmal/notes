@@ -138,39 +138,97 @@ Ruby提供两种方法使大量的记录分成内存容量允许的小部分来�
 
 2 条件 Conditions
 ^^^^^^^^^^^^^^^^^
-2.1 纯字符串条件 Pure String Conditions
+条件可以是:String,Array,Hash
+2.1 纯String条件 Pure String Conditions
 ''''''''''''''''''''''''''
-2.2 Array Conditions
+>>> Client.where("orders_count = '2'")
+潜在的SQL注入风险！
+2.2 Array条件 Array Conditions
 ''''''''''''''''''''
+>>> Client.where("orders_count = ? AND locked = ?", params[:orders], false)
+用后面参数替换前面引号里对应位置的?
+Placeholder条件
+>>> Client.where("created_at >= :start_date AND created_at <= :end_date",
+    {:start_date => params[:start_date], :end_date => params[:end_date]}
+Range条件
+>>> Client.where(:created_at => (params[:start_date].to_date)..(params[:end_date].to_date))
 2.3 Hash Conditions
 '''''''''''''''''''
+Hash条件只可以使用: equality (checking), range (checking), and subset checking。
+1. Equality Conditions
+   >>> Client.where(:locked => true)
+   >>> Client.where('locked' => true)
+2. Range Conditions
+   >>> CLient.where(:created_at => (Time.now.midnight - 1.day)..(Time.now.midnight))
+3. Subset Conditions
+   >>> Client.where(:orders_count => [1,3,5])
 3 Ordering
 ^^^^^^^^^^
+>>> Client.order("orders_count ASC, created_at DESC")
 4 Selecting Specific Fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+如果select方法被使用，则所有返回的对象都是只读的
+>>> Client.select("viewable_by, locked")
+如果Client不存在指定的field，则会产生:
+``ActiveModel::MissingAttributeError: Missing attribute: <attribute>``
+同样的值只取一个:
+>>> Client.select(:name).uniq
+or removed after:
+>>> query = CLient.select(:name).uniq
+>>> query.uniq(false)
 5 Limit and Offset
 ^^^^^^^^^^^^^^^^^^
+>>> CLient.limit(5)
+从第31条记录开始
+>>> CLient.limit(5).offset(30)
 6 Group
 ^^^^^^^
+即GROUP BY
+>>> Order.select("date(created_at) as ordered_date, sum(price) as total_price").group("date(created_at)")
 7 Having
 ^^^^^^^^
-8 Overriding Conditions
+对由sum或其它集合函数运算结果的输出进行限制。
+SQL语言中设定集合函数的查询条件时使用HAVING从句而不是WHERE从句。通常情况下，HAVING从句被放置在SQL命令的结尾处。
+>>> Order.select("date(created_at) as ordered_date, sum(price) as total_price").group("date(created_at)").having("sum(price) > ?", 100)
+8 覆盖（重写）条件 Overriding Conditions
 ^^^^^^^^^^^^^^^^^^^^^^^
 8.1 except
 ''''''''''
+>>> Post.where('id > 10').limit(20).order('id asc').except(:order)
 8.2 only
 ''''''''
+>>> Post.where('id > 10').limit(20).order('id desc').only(:order, :where)
 8.3 reorder
 '''''''''''
+::
+
+    class Post < ActiveRecord::Base
+      ..
+      ..
+      has_many :comments, :order => 'posted_at DESC'
+    end
+     
+    Post.find(10).comments.reorder('name')
+
 8.4 reverse order
 '''''''''''''''''
-9 Readonly Objects
+>>> Client.where("orders_count > 10").order(:name).reverse_order
+如果之前没指定顺序，那么reverse_order之后以id的逆序排列
+>>> Client.where("orders_count > 10").reverse_order
+9 只读对象 Readonly Objects
 ^^^^^^^^^^^^^^^^^^
+::
+    client = Client.readonly.first
+    client.visits += 1
+    client.save
+will raise ActiveRecord::ReadOnlyRecord exception
+
 10 Locking Records for Update
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-10.1 Optimistic Locking
+两种机制：更新数据库时防止竞态保证原子操作
+10.1 乐观锁定 Optimistic Locking
 '''''''''''''''''''''''
-10.2 Pessimistic Locking
+10.2 悲观锁定 Pessimistic Locking
 ''''''''''''''''''''''''
 11 Joining Tables
 ^^^^^^^^^^^^^^^^^
