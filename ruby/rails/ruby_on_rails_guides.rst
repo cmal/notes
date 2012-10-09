@@ -226,56 +226,214 @@ will raise ActiveRecord::ReadOnlyRecord exception
 10 Locking Records for Update
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 两种机制：更新数据库时防止竞态保证原子操作
-10.1 乐观锁定 Optimistic Locking
+Java Hibernate中的乐观锁和悲观锁<http://www.cnblogs.com/guyufei/archive/2011/01/10/1931632.html>
+10.1 乐观锁 Optimistic Locking
 '''''''''''''''''''''''
-10.2 悲观锁定 Pessimistic Locking
+在数据库中使用锁版本列保证不发生冲突，如果保存时发现版本不一致则raise ActiveRecord::StableObjectError
+重写锁列::
+
+    class Client < ActiveRecord::Base
+        set_locking_column :lock_client_column
+    end
+10.2 悲观锁 Pessimistic Locking
 ''''''''''''''''''''''''
+直接使用数据库提供的锁功能
 11 Joining Tables
 ^^^^^^^^^^^^^^^^^
 11.1 Using a String SQL Fragment
 ''''''''''''''''''''''''''''''''
+>>> Client.joins('LEFT OUTER JOIN addresses ON addresses.client_id = clients.id')
 11.2 Using Array/Hash of Named Associations
 '''''''''''''''''''''''''''''''''''''''''''
+假设这样的关系::
+
+    class Category < ActiveRecord::Base
+      has_many :posts
+    end
+     
+    class Post < ActiveRecord::Base
+      belongs_to :category
+      has_many :comments
+      has_many :tags
+    end
+     
+    class Comment < ActiveRecord::Base
+      belongs_to :post
+      has_one :guest
+    end
+     
+    class Guest < ActiveRecord::Base
+      belongs_to :comment
+    end
+     
+    class Tag < ActiveRecord::Base
+      belongs_to :post
+    end
+下列方法产生INNER JOIN:
+单个关系:
+>>> Category.joins(:posts)
+相当于:
+>>> SELECT categories.* FROM categories INNER JOIN posts ON posts.category_id = categories.id
+多个关系:
+>>> Post.joins(:category, :comments)
+单层嵌套关系:
+>>> Post.joins(:comments => :guest)
+多层嵌套关系:
+>>> Category.joins(:posts => [{:comments => :guest}, :tags])
 11.3 Specifying Conditions on the Joined Tables
 '''''''''''''''''''''''''''''''''''''''''''''''
-12 Eager Loading Associations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+在joined table上可以正常使用Array和String条件，Hash条件这样来用::
+
+    time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+    Client.joins(:orders).where('orders.created_at' => time_range)
+
+或者这样来嵌套Hash条件::
+
+    time_range = (Time.now.midnight - 1.day)..Time.now.midnight
+    Client.joins(:orders).where(:orders => {:created_at => time_range})
+
+12 贪婪加载Eager Loading Associations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+防止重复性查询数据库::
+
+    clients = Client.includes(:address).limit(10)
+
+    client.each do |client|
+        puts client.address.postcode
+    end
+
 12.1 Eager Loading Multiple Associations
 ''''''''''''''''''''''''''''''''''''''''
-12.2 Specifying Conditions on Eager Loaded
+多个:
+>>> Post.includes(:category, :comments)
+嵌套:
+>>> Category.includes(:posts => [{:comments => :guest}, :tags).find(1)
+12.2 给贪婪加载的关联指定条件Specifying Conditions on Eager Loaded Associations
 ''''''''''''''''''''''''''''''''''''''''''
-13 Scopes
+建议用joins连接表代替，如果非要用where也可以
+>>> Post.includes(:comments).where("comments.visible", true)
+这里如果在 includes 的查询时， post 没有任何 comment ，那依然会加载所有的 post 记录。如果使用 joins （使用 INNER JOIN ），那就不会返回任何记录。
+13 作用域Scopes
 ^^^^^^^^^
-13.1 Working with times
+最关键的:会返回ActiveRecord::Relation对象，以便进一步被其他方法调用
+简单定义::
+    class Post < ActiveRecord::Base
+      scope :published, where(:published => true)
+    end
+级连定义::
+    class Post < ActiveRecord::Base
+      scope :publiced, where(:published => true).joins(:category)
+    end
+在Scopes之间级连::
+    class Post < ActiveRecord::Base
+      scope :published, where(:published => true)
+      scope :published_and_commented, published.and(self.arel_table[:comments_count].gt(0))
+调用:类调用
+>>> Post.published
+对象调用
+>>> category = Category.first
+>>> category.posts.published
+13.1 处理时间Working with times
 '''''''''''''''''''''''
-13.2 Passing in arguments
+如果在作用域里面包含日期或者时间，你必需使用 lambda 来保证它们每次都被重新计算::
+    class Post < ActiveRecord::Base
+      scope :created_before_now, lambda { where("created_at < ?", Time.zone.now) }
+    end
+如果不使用 lambda ， Time.zone.now 将只调用一次。
+13.2 传递参数Passing in arguments
 '''''''''''''''''''''''''
-13.3 Working with scopes
+当在 scope 里面使用 lambda 时，它可以带参数::
+    class Post < ActiveRecord::Base
+      scope :1_week_before, lambda { |time| where("created_at < ?", time) }
+    end 
+调用:
+>>> Post.1_week_before(Time.zone.now)
+这只是相当于实现了一个类方法的功能，类方法是给作用域传递参数的一个更好的方式::
+    class Post < ActiveRecord::Base
+      def self.1_week_before(time)
+        where("created_at < ?", time)
+      end
+    end
+同样可以被对象调用：
+>>> category.posts.1_week_before(time)
+13.3 什么情况下需要作用域Working with scopes
 ''''''''''''''''''''''''
-13.4 Applying a default scope
+结果需要进一步被（其他方法）调用时
+13.4 默认执行的Scope Applying a default scope
 '''''''''''''''''''''''''''''
+如果我们希望定义一个 model 里面所有的查询都会执行的作用域，那我们可以在 model 里面使用 default_scope 方法::
+    class Client < ActiveRecord::Base
+      default_scope where("removed_at is NULL")
+    end
 13.5 Removing all scoping
 '''''''''''''''''''''''''
-14 Dynamic Finders
+unscoped尤其在移除default_scope时有用
+>>> Client.unscoped.all
+会移除所有scoping包括default_scope
+14 动态查找方法Dynamic Finders
 ^^^^^^^^^^^^^^^^^^
+ActiveRecord为每个字段都提供了 find_by_* 和 find_all_by_* 方法
+find_last_by_* 来找到最后一条匹配的记录
+find_by_*! 保证查不到记录时抛出ActiveRecord::RecordNotFound异常
+中间and串联多个动态查找方法 find_by_name_and_sex
 15 Find or build a new object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+查找一条记录并在它不存在时创建它
 15.1 first or create
 ''''''''''''''''''''
+>>> Client.where(:first_name => 'Andy').first_or_create(:locked => false)
+>>> Client.find_or_create_by_first_name(:first_name => "Andy", :locked => false)
+我们鼓励使用前者，因为它能明确指定哪些参数传给 find 方法，哪些参数传给 create 方法，这样能避免很多混乱。
 15.2 first or create!
 '''''''''''''''''''''
+当新记录不合法时，就会抛出一个异常
 15.3 first or initialize
 ''''''''''''''''''''''''
+first_or_initialize 方法和 first_or_create 方法差不多，只是它最后调用 new 而不是create 方法。那就是说在内存中创建了一个新 model 实例，而没有保存到数据库中
+保存请调用save方法
 16 Finding by SQL
 ^^^^^^^^^^^^^^^^^
+直接使用 SQL 语句查找记录
+find_by_sql
 17 select all
 ^^^^^^^^^^^^^
+find_by_sql 有一个近似方法叫 connection#select_all 。像 find_by_sql 一样， select_all 方法直接用 SQL 语句从数据库里面查找数据，但是并不实例化它们。它会返回一个包含映射表的数组，每个映射表代表了一条记录。
 18 pluck
 ^^^^^^^^
+pluck 用于从一个 model 相关的数据表中查询一个单独的列。它接受一个列名作为参数并以相应的数据类型返回一组值。
 19 Existence of Objects
 ^^^^^^^^^^^^^^^^^^^^^^^
+>>> Client.exists?(1)
+
+多个id作为参数，只要其中之一满足即返回true
+>>> Client.exists?(1,2,3)
+或者
+>>> Client.exists?([1,2,3]}
+
+>>> Client.where(:first_name => 'Ryan').exists?
+
+>>> Client.exists?
+
+其他方法::
+    # via a model
+    Post.any?
+    Post.many?
+     
+    # via a named scope
+    Post.recent.any?
+    Post.recent.many?
+     
+    # via a relation
+    Post.where(:published => true).any?
+    Post.where(:published => true).many?
+     
+    # via an association
+    Post.first.categories.any?
+    Post.first.categories.many?
 20 Calculations
 ^^^^^^^^^^^^^^^
+所有的计算方法都直接在 model 上，或者 relation 实例对象上使用
+count, average, minimum, maximum, sum
 20.1 Count
 ''''''''''
 20.2 Average
@@ -290,5 +448,15 @@ will raise ActiveRecord::ReadOnlyRecord exception
 ^^^^^^^^^^^^^^^^^^
 21.1 Automatic EXPLAIN
 ''''''''''''''''''''''
+Active Record 可以在慢查询中自动执行 EXPLAIN 并写入日志。
+
+这个功能需要加上配置参数来开启
+>>> config.active_record.auto_explain_threshold_in_seconds
+
+如果设置为一个数字，那一个超过这些时间（以秒为单位）的查询就会自动触发一个 EXPLAIN 并写入日志。在 relation 的计算中，这个阈值是与获取记录的总时间相比较的。所以，一个 relation 的计算就像是一个工作单位，不管它是不是实现预先加载而涉及了多个查询。
+
+阈值为 nil 则关闭了自动执行 EXPLAIN 。
+
+默认情况下，开发模式下的阈值为 0.5 秒，测试和生产模式下为 nil 。
 21.2 Interpreting EXPLAIN
 '''''''''''''''''''''''''
