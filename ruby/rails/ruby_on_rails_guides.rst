@@ -454,9 +454,7 @@ Active Record 可以在慢查询中自动执行 EXPLAIN 并写入日志。
 >>> config.active_record.auto_explain_threshold_in_seconds
 
 如果设置为一个数字，那一个超过这些时间（以秒为单位）的查询就会自动触发一个 EXPLAIN 并写入日志。在 relation 的计算中，这个阈值是与获取记录的总时间相比较的。所以，一个 relation 的计算就像是一个工作单位，不管它是不是实现预先加载而涉及了多个查询。
-
 阈值为 nil 则关闭了自动执行 EXPLAIN 。
-
 默认情况下，开发模式下的阈值为 0.5 秒，测试和生产模式下为 nil 。
 21.2 Interpreting EXPLAIN
 '''''''''''''''''''''''''
