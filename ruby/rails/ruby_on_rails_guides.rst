@@ -486,5 +486,10 @@ layout:
 * layout继承
 避免双重render: 提示Can only render or redirect once per action错误
 2. Call redirect_to to send an HTTP redirect status code to the browser
+   render与redirect_to的区别:
+    render :action => "index" 不会执行index中的代码
+    而redirect_to :action => :index 反之
 3. Call head to create a response consisting solely of HTTP headers to send back to the browser
-
+   只返回HTTP header（一些头信息，包含返回码404,201等）
+     head :bad_request
+     head :created, :location => photo_path(@photo)
