@@ -458,3 +458,33 @@ Active Record 可以在慢查询中自动执行 EXPLAIN 并写入日志。
 默认情况下，开发模式下的阈值为 0.5 秒，测试和生产模式下为 nil 。
 21.2 Interpreting EXPLAIN
 '''''''''''''''''''''''''
+Layouts and Rendering in Rails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 Overview: How the Pieces Fit Together
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 Creating Responses
+^^^^^^^^^^^^^^^^^^^^
+1. Call render to create a full response to send back to the browser
+* render nothing
+* render an action's view
+* render another template within the controller
+* render a template within another controller
+* render an arbitrary file on the file system
+* :inline, :inline with :type => :builder
+* render :text 常用于 *AJAX* 和非HTML的web服务请求。:text默认关闭:layout，可以手动打开
+* render :json 自动调用to_json
+* render :xml
+* render vanilla JavaScript, :js
+render的可用选项
+:content-type, :layout, :status, :location
+layout:
+* 在controller中指定layout，存储layout为app/views/layouts/***.html.erb
+* 项目主layout在ApplicationController中指定
+* 可在运行时选择layout(为特定的情况选择特定的layout)
+* inline layout
+* 有条件的layout
+* layout继承
+避免双重render: 提示Can only render or redirect once per action错误
+2. Call redirect_to to send an HTTP redirect status code to the browser
+3. Call head to create a response consisting solely of HTTP headers to send back to the browser
+
